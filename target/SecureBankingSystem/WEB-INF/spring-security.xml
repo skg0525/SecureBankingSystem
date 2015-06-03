@@ -1,0 +1,121 @@
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/security
+	http://www.springframework.org/schema/security/spring-security-3.2.xsd">
+
+	<!-- enable use-expressions -->
+	<http auto-config="true" use-expressions="true">
+		<!-- These are admin/internal user specific -->
+		<intercept-url pattern="/welcomeAdmin**" access="hasRole('ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/employee**" access="hasRole('ROLE_EMPLOYEE')" requires-channel="https"/>
+		<intercept-url pattern="/addUser**" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https" />
+<!-- 		<intercept-url pattern="/removeUser*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" /> -->
+<!-- 		<intercept-url pattern="/viewUser*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" /> -->
+		<intercept-url pattern="/getList*" access="hasRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/modifyUser" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+        <intercept-url pattern="/viewQueue*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/removeUserDB*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/removeUserExternal*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/ticketDetails*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/modifyUserExternal*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+		<intercept-url pattern="/viewTicket*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/modifyExternalUserByInternal*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/authorizeTransactions*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https"/>
+		<intercept-url pattern="/deleteTransactionSuccess*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+		<intercept-url pattern="/viewPII*" access="hasAnyRole('ROLE_EMPLOYEE', 'ROLE_ADMIN')" requires-channel="https" />
+		
+		<!-- These are permitAll -->
+		<intercept-url pattern="/accountSummary*" access="hasRole('ROLE_USER')" requires-channel="https" />
+		<intercept-url pattern="/transferMoney*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+		<intercept-url pattern="/transferActivity*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+		<intercept-url pattern="/verifyUser*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+		<intercept-url pattern="/debitAmount*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+		<intercept-url pattern="/creditAmount*" access="hasRole('ROLE_USER')" requires-channel="https" />
+		<intercept-url pattern="/transactionsReview*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+		<intercept-url pattern="/authorizePII*" access="hasRole('ROLE_USER')" requires-channel="https"/>
+
+		<!-- These are external user specific -->
+        <intercept-url pattern="/index*" access="permitAll" requires-channel="https"/>
+		<intercept-url pattern="/register*" access="permitAll" requires-channel="https" />
+		<intercept-url pattern="/unlockAccount*" access="permitAll" requires-channel="https"/>
+<!-- 		<intercept-url pattern="/**" access="permitAll" /> -->
+		<intercept-url pattern="/changePassword*" access="permitAll" requires-channel="https"/>
+		<intercept-url pattern="/activateAccount*" access="permitAll" requires-channel="https" />
+		<intercept-url pattern="/activateAccount/activateAccount*" access="permitAll" requires-channel="https"/>
+		<intercept-url pattern="/resetPassword*" access="permitAll" requires-channel="https"/>
+
+		<!-- access denied page -->
+		<access-denied-handler error-page="/403" />
+		<form-login login-page="/index"
+			authentication-success-handler-ref="mySuccessHandler"
+			authentication-failure-url="/index?error" username-parameter="username"
+			password-parameter="password" />
+		<logout logout-success-url="/index?logout" />
+		<!-- enable csrf protection -->
+		<csrf />
+<port-mappings>
+        <!-- Default ports -->
+        <port-mapping http="80" https="443"/>
+        <!-- Websphere default ports -->
+        <port-mapping http="9080" https="9443"/>
+        <!-- Tomcat default ports -->
+        <port-mapping http="8080" https="8443"/>
+        <!-- Jetty custom ports -->
+        <port-mapping http="7777" https="7443"/>
+    </port-mappings>
+		<session-management>
+			<concurrency-control max-sessions="1"
+				error-if-maximum-exceeded="true" />
+		</session-management>
+	</http>
+
+	<beans:bean id="mySuccessHandler"
+		class="edu.softwaresecurity.group5.controller.LoginSuccessHandler" />
+
+	<beans:bean id="customUserDetailsService"
+		class="edu.softwaresecurity.group5.service.CustomUserDetailsService">
+		<beans:property name="usersByUsernameQuery"
+			value="select * from users where username = ?" />
+		<beans:property name="authoritiesByUsernameQuery"
+			value="select username, role from user_roles where username =?" />
+		<beans:property name="dataSource" ref="dataSource" />
+	</beans:bean>
+
+	<beans:bean id="userDetailsDao"
+		class="edu.softwaresecurity.group5.dao.impl.LoginAttemptsLockResetDAOImpl">
+		<beans:property name="dataSource" ref="dataSource" />
+	</beans:bean>
+
+	<beans:bean id="authenticationProvider"
+		class="edu.softwaresecurity.group5.handler.LimitLoginAuthenticationProvider">
+		<beans:property name="userDetailsService" ref="customUserDetailsService" />
+		<beans:property name="userDetailsDao" ref="userDetailsDao" />
+		<beans:property name="passwordEncoder" ref="encoder" />
+	</beans:bean>
+
+	<authentication-manager>
+		<authentication-provider ref="authenticationProvider" />
+	</authentication-manager>
+
+
+	<!-- Select users and user_roles from database -->
+	<!-- <authentication-manager> -->
+	<!-- <authentication-provider> -->
+
+	<!-- <password-encoder ref="encoder" /> -->
+	<!-- <jdbc-user-service data-source-ref="dataSource" -->
+	<!-- users-by-username-query= -->
+	<!-- "select username,password,enabled from users where username=?" -->
+	<!-- authorities-by-username-query= -->
+	<!-- "select username,role from user_roles where username=?" /> -->
+	<!-- </authentication-provider> -->
+	<!-- </authentication-manager> -->
+
+	<beans:bean id="encoder"
+		class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder">
+		<beans:constructor-arg name="strength" value="10" />
+	</beans:bean>
+
+</beans:beans>

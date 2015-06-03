@@ -1,0 +1,35 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/mvc 
+        http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+	<context:component-scan base-package="edu.softwaresecurity.group5.controller" />
+
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix">
+			<value>/WEB-INF/views/</value>
+		</property>
+		<property name="suffix">
+			<value>.jsp</value>
+		</property>
+	</bean>
+	
+	<!-- Declaring beans -->
+	<bean id="CustomerDAOImpl" class="edu.softwaresecurity.group5.dao.impl.CustomerDAOImpl" />
+	<bean id="CustomerServiceImpl" class="edu.softwaresecurity.group5.service.CustomerServiceImpl" />
+	<bean id="CustomerInformation" class="edu.softwaresecurity.group5.model.CustomerInformation" />
+	<bean id="CustomerInformationDTO" class="edu.softwaresecurity.group5.dto.CustomerInformationDTO" />
+	<bean id="PKIImpl" class="edu.softwaresecurity.group5.service.PKIImpl" />
+	
+	<mvc:resources mapping="/resources/**" location="/resources/grayscale/" />
+	<mvc:annotation-driven />
+	<mvc:default-servlet-handler/>
+</beans>
